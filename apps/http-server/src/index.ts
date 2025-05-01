@@ -1,8 +1,8 @@
 import express from "express";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import cors from "cors";
-import { prisma } from "@repo/db";
+import { prisma } from "../node_modules/@repo/db/src/index";
 import { JWT_SECRET } from "@repo/backend-common/config";
 import { authMiddleware } from "./authMiddleware";
 import { CreateRoomSchema, CreateUserSchema, SigninSchema } from "@repo/common/types"
