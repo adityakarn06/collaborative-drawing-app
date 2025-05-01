@@ -24,9 +24,9 @@ app.use(express.json());
 app.post("/signup", async (req, res) => {
   const parsedData = CreateUserSchema.safeParse(req.body);
   if (!parsedData.success) {
-    res.json{
+    res.json({
       msg: "incorrect inputs"
-    }
+    })
     return;
   }
 
@@ -61,9 +61,9 @@ app.post("/signup", async (req, res) => {
 app.post("/signin", async (req, res) => {
   const data = SigninSchema.safeParse(req.body);
   if (!data.success) {
-    res.json{
+    res.json({
       msg: "incorrect inputs"
-    }
+    })
     return;
   }
   const { email, password } = req.body;
@@ -94,9 +94,9 @@ app.post("/signin", async (req, res) => {
 app.post("/room", authMiddleware, async (req, res) => {
   const data = CreateRoomSchema.safeParse(req.body);
   if (!data.success) {
-    res.json{
+    res.json({
       msg: "incorrect inputs"
-    }
+    })
     return;
   }
   const { slug } = req.body;
