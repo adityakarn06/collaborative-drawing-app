@@ -59,13 +59,14 @@ app.post("/signup", async (req, res) => {
 })
 
 app.post("/signin", async (req, res) => {
-  const data = SigninSchema.safeParse(req.body);
-  if (!data.success) {
+  const parsedData = SigninSchema.safeParse(req.body);
+  if (!parsedData.success) {
     res.json({
       msg: "incorrect inputs"
     })
     return;
   }
+
   const { email, password } = req.body;
   try {
     const user = await prisma.user.findFirst({
@@ -77,7 +78,7 @@ app.post("/signin", async (req, res) => {
       res.json({ success: false, msg: "User doesn't exist...please signup"});
       return;
     }
-    const passMatch = bcrypt.compare(password, user.password);
+    const passMatch = await bcrypt.compare(password, user.password);
     if (!passMatch) {
       res.json({ success: false, msg: "Incorrect Password"});
       return;
