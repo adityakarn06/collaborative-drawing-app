@@ -103,6 +103,7 @@ wss.on("connection", function connection(ws, request) {
         }
 
         if (parsedData.type === "chat") {
+            console.log("chat received")
             const roomId = parsedData.roomId;
             const message = parsedData.message;
 

@@ -122,20 +122,40 @@ app.post("/room", authMiddleware, async (req, res) => {
 })
 
 app.get("/chats/:roomId", async (req, res) => {
-  const roomId = Number(req.params.roomId);
-  const messages = await prisma.chat.findMany({
+  try {
+    const roomId = Number(req.params.roomId);
+    const messages = await prisma.chat.findMany({
+      where: {
+        roomId: roomId
+      },
+      orderBy: {
+        id: "desc"
+      },
+      take: 50
+    });
+    res.json({
+      messages
+    })
+  } catch (error) {
+    console.log(error)
+    res.json({
+      msg: "Server error"
+    })
+  }
+})
+
+// send slug get room id
+app.get("/room/:slug", async (req, res) => {
+  const slug = req.params.slug;
+  const room = await prisma.room.findFirst({
     where: {
-      roomId: roomId
-    },
-    orderBy: {
-      id: "desc"
-    },
-    take: 50
+      slug
+    }
   });
   res.json({
-    messages
+    room
   })
-})
+});
 
 app.listen(PORT, () => {
     console.log(`Server runing at http://localhost:${PORT}`);
