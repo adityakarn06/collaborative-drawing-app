@@ -1,11 +1,12 @@
 import { WebSocket, WebSocketServer } from "ws";
-import jwt, { JwtPayload } from "jsonwebtoken"
+import jwt from "jsonwebtoken"
 import { prismaClient } from "@repo/db/client";
 import { JWT_SECRET } from "@repo/backend-common/jwtConfig";
 
 const wss = new WebSocketServer({ port: 8080 });
 console.log("WebSocket server started on ws://localhost:8080");
 
+// one user can connect to multiple rooms
 interface User {
     ws: WebSocket,
     rooms: string[],
@@ -34,7 +35,6 @@ function checkUser(token: string): string | null {
 }
 
 wss.on("connection", function connection(ws, request) {
-    // authorization
     const url = request.url;
     if (!url) {
         return;
@@ -56,7 +56,26 @@ wss.on("connection", function connection(ws, request) {
     })
 
     ws.on("message", async function message(data) {
-        const parsedData = JSON.parse(data as unknown as string);
+        let parsedData;
+        try {
+            const dataString = data.toString();
+            parsedData = JSON.parse(dataString);
+            
+            if (!parsedData || typeof parsedData !== 'object' || Array.isArray(parsedData) || !parsedData.type) {
+                ws.send(JSON.stringify({
+                    type: "error",
+                    message: "Invalid message format"
+                }));
+                return;
+            }
+        } catch (error) {
+            console.error("Failed to parse message:", error);
+            ws.send(JSON.stringify({
+                type: "error",
+                message: "Invalid JSON message"
+                }));
+            return;
+        }
 
         if (parsedData.type === "join_room") {
             const user = users.find(x => x.ws === ws);
@@ -103,19 +122,30 @@ wss.on("connection", function connection(ws, request) {
         }
 
         if (parsedData.type === "chat") {
-            console.log("chat received")
             const roomId = parsedData.roomId;
             const message = parsedData.message;
 
+            //todo: check if msg isn't too long
+
             // this is really slow --- idealy we should propagate it to the db via queue through pipelines
             // also add a rate limit
-            await prismaClient.chat.create({
-                data: {
-                    roomId,
-                    userId,
-                    message
-                }
-            })
+            try {
+                await prismaClient.chat.create({
+                    data: {
+                        roomId,
+                        userId,
+                        message
+                    }
+                })
+            } catch (error) {
+                console.error("Error saving chat message:", error);
+                ws.send(JSON.stringify({
+                    type: "error",
+                    message: "Failed to save message"
+                }));
+                return;
+            }
+            
 
             users.forEach(user => {
                 if (user.rooms.includes(roomId)) {

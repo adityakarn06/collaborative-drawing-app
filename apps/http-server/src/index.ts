@@ -25,29 +25,29 @@ app.post("/signup", async (req, res) => {
         try{
             const userExists = await prismaClient.user.findFirst({
                 where: {
-                email: parsedData.data.email
+                  email: parsedData.data.email
                 }
             });
 
             if (userExists) {
-                res.status(411).json({ success: false, msg: "User already exists" });
+                res.status(411).json({ success: false, msg: "User already exists. Please Login" });
                 return;
             }
 
             const hashedPass = await bcrypt.hash(parsedData.data.password, 10);
             const user = await prismaClient.user.create({
-            data: {
-                email:parsedData.data.email,
-                password: hashedPass,
-                name: parsedData.data.name
-            }
+              data: {
+                  email:parsedData.data.email,
+                  password: hashedPass,
+                  name: parsedData.data.name
+              }
             })
 
             res.status(201).json({
                 success: true,
                 message: "You are signed up",
                 user
-            })    
+            })
         }
         
         catch (error) {
@@ -101,7 +101,7 @@ app.post("/room", authMiddleware, async (req, res) => {
     const parsedData = CreateRoomSchema.safeParse(req.body);
     if (!parsedData.success) {
         res.json({
-            msg: "incorrect inputs"
+          msg: "incorrect inputs"
         })
         return;
     }
@@ -110,10 +110,10 @@ app.post("/room", authMiddleware, async (req, res) => {
 
     try {
         const room = await prismaClient.room.create({
-        data: {
-            slug: parsedData.data.slug,
-            adminId: userId
-        }
+          data: {
+              slug: parsedData.data.slug,
+              adminId: userId
+          }
         })
     
         res.json({
