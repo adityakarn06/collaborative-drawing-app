@@ -38,10 +38,6 @@ export default function RoomCanvas({ roomId }: { roomId: string }) {
     return (
         <div>
             <Canvas roomId={roomId} socket={socket} />
-            <div className="absolute bottom-0 right-0 flex gap-1 p-2 bg-gray-200">
-                <div className="bg-white px-4 py-2 text-black">Rect</div>
-                <div className="bg-white px-4 py-2 text-black">Circle</div>
-            </div>
         </div>
     )
 }
