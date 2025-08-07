@@ -14,18 +14,33 @@ type Shape = {
     radius: number;
 }
 
-export function initDraw(canvas: HTMLCanvasElement) {
+export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket: WebSocket | null) {
   const ctx = canvas.getContext("2d");
-
-  // TODO: take existing shapes from backend
-  let existingShapes: Shape[] = [];
-
   if (!ctx) {
     console.error("Failed to get canvas context");
     return;
   }
-  ctx.fillStyle = "rgba(0, 0, 0)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  let existingShapes: Shape[] = await getExistingShapes(roomId);
+  if (!existingShapes) {
+    existingShapes = [];
+  }
+
+  if (!socket) {
+    console.error("WebSocket is not connected");
+    return;
+  }
+
+  socket.onmessage = (event => {
+    const message = JSON.parse(event.data);
+    if (message.type === "chat") {
+        const parsedShape = JSON.parse(message.message);
+        existingShapes.push(parsedShape);
+        clearCanvas(existingShapes, canvas, ctx);
+    }
+    });
+
+  clearCanvas(existingShapes, canvas, ctx);
 
   let isDrawing = false;
   let startX = 0;
@@ -53,13 +68,21 @@ export function initDraw(canvas: HTMLCanvasElement) {
     isDrawing = false;
     const width = e.clientX - startX;
     const height = e.clientY - startY;
-    existingShapes.push({
+
+    const shape: Shape = {
         type: "rect",
         x: startX,
         y: startY,
         height,
         width
-    })
+    }
+    existingShapes.push(shape)
+
+    socket?.send(JSON.stringify({
+        type: "chat",
+        roomId,
+        message: JSON.stringify(shape)
+    }));
   });
 }
 
@@ -79,3 +102,33 @@ function clearCanvas(existingShapes: Shape[], canvas: HTMLCanvasElement, ctx: Ca
     })
 }
 
+async function getExistingShapes(roomId: string) {
+    const { data } = await axios.get(`${HTTP_BACKEND_URL}/chats/${roomId}`);
+    const messages = data.messages;
+
+    // const shapes: Shape[] = messages.map((message: any) => {
+    //     if (message.type === "rect") {
+    //         return {
+    //             type: "rect",
+    //             x: message.x,
+    //             y: message.y,
+    //             width: message.width,
+    //             height: message.height
+    //         };
+    //     } else if (message.type === "circle") {
+    //         return {
+    //             type: "circle",
+    //             centerX: message.centerX,
+    //             centerY: message.centerY,
+    //             radius: message.radius
+    //         };
+    //     }
+    //     return null;
+    // }).filter((shape: Shape | null) => shape !== null) as Shape[];
+    
+    const shapes = messages.map((x: {message: string}) => {
+        const messageData = JSON.parse(x.message);
+        return messageData;
+    });
+    return shapes;
+}
